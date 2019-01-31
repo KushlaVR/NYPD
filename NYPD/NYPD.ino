@@ -67,10 +67,10 @@ struct {
 ///////////////////////////////////////////// 
 
 RoboEffects motorEffect = RoboEffects();
-RoboMotor motor = RoboMotor("motor", D5, D6, &motorEffect);
+RoboMotor motor = RoboMotor("motor", D7, D8, &motorEffect);
 
 RoboEffects stearingEffect = RoboEffects();
-RoboMotor stearing = RoboMotor("stearing", D7, D8, &stearingEffect);
+RoboMotor stearing = RoboMotor("stearing", D5, D6, &stearingEffect);
 
 bool turnOffTurnLights = false;
 
