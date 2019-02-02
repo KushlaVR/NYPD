@@ -86,13 +86,17 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Blinker.h" />
     <ClInclude Include="Json.h" />
     <ClInclude Include="RoboconMotor.h" />
+    <ClInclude Include="SerialController.h" />
     <ClInclude Include="__vm\.NYPD.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Blinker.cpp" />
     <ClCompile Include="Json.cpp" />
     <ClCompile Include="RoboconMotor.cpp" />
+    <ClCompile Include="SerialController.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

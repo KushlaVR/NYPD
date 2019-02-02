@@ -49,11 +49,11 @@ RoboMotor::RoboMotor(String name, int pwmPin, int reley1Pin, int reley2Pin, Robo
 	this->motorPinB = reley2Pin;
 	this->effect = effect;
 	//Налаштовуємо пни на вихід
-	pinMode(pwmPin, OUTPUT);
+	if (pwmPin!=0) pinMode(pwmPin, OUTPUT);
 	pinMode(reley1Pin, OUTPUT);
 	pinMode(reley2Pin, OUTPUT);
 	//Виводимо нулі на всі пни (шим мовчить, релюшки виключені)
-	digitalWrite(pwmPin, LOW);
+	if (pwmPin != 0) digitalWrite(pwmPin, LOW);
 	digitalWrite(reley1Pin, LOW);
 	digitalWrite(reley2Pin, LOW);
 }
@@ -69,7 +69,7 @@ void RoboMotor::setWeight(long weight)
 	//На основі ваги - визначаємо еталонну тривалість розгону (в мілісекундах) мотора від 0 до максимальних обертів. 
 	//Це умовний показник, і він немає прямого відношення до реального світу, 
 	//він лише для того, щоб не перевантаждувати мотори в момент старту, а плавно розганяти їх.
-	this->etalonDuration = 500 + (weight / 20);//тривалість розгону від 0 до максимума = 0,5 секунди + 0,5сеунди на кожні 10 кг ваги
+	this->etalonDuration = /*500 + */(weight / 20);//тривалість розгону від 0 до максимума = 0,5 секунди + 0,5сеунди на кожні 10 кг ваги
 	//Де взялась така формула?
 	//500мс + (Вага(грам) / 10000грам * 500мс) => скорочуємо одиниці виміру (а саме грами)
 	//500мс + (Вага / 10000 * 500мс) => Виносимо одиниці за дужки
@@ -103,17 +103,17 @@ void RoboMotor::loop()
 	if (factSpeed > 0) {
 		//їдемо в перед
 		digitalWrite(motorPinA, LOW);
-		if (pwmPin == 0)
+		if (pwmPin != 0)
 			digitalWrite(motorPinB, HIGH);
 		else
 			analogWrite(motorPinB, factSpeed);
 	}
 	else if (factSpeed < 0) {
 		//Їдемо назад
-		if (pwmPin == 0)
+		if (pwmPin != 0)
 			digitalWrite(motorPinA, HIGH);
 		else
-			analogWrite(motorPinA, factSpeed);
+			analogWrite(motorPinA, -factSpeed);
 		digitalWrite(motorPinB, LOW);
 	}
 	else {
