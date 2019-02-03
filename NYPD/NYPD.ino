@@ -65,27 +65,28 @@
 
 
 // конфигурация интерфейса   
+// RemoteXY configurate   
 #pragma pack(push, 1) 
 uint8_t RemoteXY_CONF[] =
 { 255,7,0,0,0,54,0,8,8,0,
-5,42,5,27,30,30,2,26,31,3,
-132,2,2,27,7,2,26,5,47,66,
-28,30,30,2,26,31,3,131,32,17,
-39,14,2,26,2,0,77,4,22,11,
+5,43,1,21,36,36,2,26,31,3,
+132,2,2,27,7,2,26,5,51,63,
+21,36,36,2,26,31,3,131,33,5,
+34,12,2,26,2,0,76,2,22,11,
 2,26,31,31,79,78,0,79,70,70,
 0 };
 
-// структура определяет все переменные вашего интерфейса управления  
+// this structure defines all the variables of your control interface  
 struct {
 
 	// input variable
-	int8_t left_joy_x; // =-100..100 координата x положения джойстика 
-	int8_t left_joy_y; // =-100..100 координата y положения джойстика 
-	uint8_t drive_mode; // =0 если переключатель в положении A, =1 если в положении B, =2 если в положении C, ... 
-	int8_t right_joy_x; // =-100..100 координата x положения джойстика 
-	int8_t right_joy_y; // =-100..100 координата y положения джойстика 
-	uint8_t turnLight; // =0 если переключатель в положении A, =1 если в положении B, =2 если в положении C, ... 
-	uint8_t Siren; // =1 если переключатель включен и =0 если отключен 
+	int8_t left_joy_x; // =-100..100 x-coordinate joystick position 
+	int8_t left_joy_y; // =-100..100 y-coordinate joystick position 
+	uint8_t drive_mode; // =0 if select position A, =1 if position B, =2 if position C, ... 
+	int8_t right_joy_x; // =-100..100 x-coordinate joystick position 
+	int8_t right_joy_y; // =-100..100 y-coordinate joystick position 
+	uint8_t turnLight; // =0 if select position A, =1 if position B, =2 if position C, ... 
+	uint8_t Siren; // =1 if switch ON and =0 if OFF 
 
 	  // other variable
 	uint8_t connect_flag;  // =1 if wire connected, else =0 
@@ -115,13 +116,17 @@ bool turnOffTurnLights = false;
 void handleTurnLight(int stearing) {
 	if (RemoteXY.turnLight == 1) return;
 	if (RemoteXY.turnLight == 2) { //Включений правий поворот
+		if (!leftLight.isRunning()) leftLight.begin();
 		if (stearing > 50) turnOffTurnLights = true;//ставимо флажок, щоб вимкнути поворот після того як руль вернеться в прямк положенн
 	}
 	if (RemoteXY.turnLight == 0) { //Включений правий поворот
+		if (!rightLight.isRunning()) rightLight.begin();
 		if (stearing < -50) turnOffTurnLights = true;//ставимо флажок, щоб вимкнути поворот після того як руль вернеться в прямк положенн
 	}
 	if (stearing > -10 && stearing < 10 && turnOffTurnLights) {
 		RemoteXY.turnLight = 1;
+		if (leftLight.isRunning()) leftLight.end();
+		if (rightLight.isRunning()) rightLight.end();
 		turnOffTurnLights = false;
 		Serial.println("Поворот вимкнено.");
 	}
@@ -130,6 +135,15 @@ void handleTurnLight(int stearing) {
 void setup()
 {
 	Serial.begin(115200);
+	Serial.println("");
+	Serial.println("");
+	Serial.println("     _______ ___ ___ ______ _____");
+	Serial.println("    |    |  |   |   |   __ \\     \\");
+	Serial.println("    |       |\\     /|    __/  --  |");
+	Serial.println("    |__|____| |___| |___|  |_____/");
+	Serial.println("               WI-FI remote control");
+	Serial.println("                 kushlavr@gmail.com");
+
 	RemoteXY_Init();
 	// TODO you setup code 
 	analogWriteRange(120);
@@ -235,6 +249,12 @@ void loop()
 				stearing.setSpeed(mapStearing(RemoteXY.left_joy_x));
 				handleTurnLight(RemoteXY.left_joy_x);
 				break;
+			}
+			if (RemoteXY.Siren == 1) {
+				if (!siren1.isRunning()) siren1.begin();
+			}
+			else {
+				if (siren1.isRunning()) siren1.end();
 			}
 			analogWrite(BUILTIN_LED, 220);
 		}

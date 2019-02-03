@@ -32,6 +32,7 @@ public:
 	void loop();
 	Blinker * Add(int pin, unsigned long offset, uint8_t value);
 	Blinker * begin() { current = first; startTime = millis(); return this; };
-	Blinker * end() { current = nullptr; return this; };
+	Blinker * end();
+	bool isRunning() { return startTime != 0; };
 };
 

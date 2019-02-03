@@ -47,6 +47,19 @@ Blinker * Blinker::Add(int pin, unsigned long offset, uint8_t value)
 	return this;
 }
 
+Blinker * Blinker::end()
+{
+	current = nullptr;
+	startTime = 0;
+	BlinkerItem * item = first;
+	while (item!=nullptr)
+	{
+		analogWrite(item->pin, 0);
+		item = item->next;
+	}
+	return this;
+}
+
 BlinkerItem::BlinkerItem()
 {
 	next = nullptr;
