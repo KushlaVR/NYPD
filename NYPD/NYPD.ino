@@ -30,7 +30,7 @@
 //  STEARING B <-D5               SO
 //               GND              SC
 //               3V3              S1
-//               D4               S2
+// Front Light <-D4               S2
 //   siren red <-D3               S3
 //    LEFT LED <-D2               VU
 //   RIGHT LED <-D1              GND
@@ -98,6 +98,9 @@ struct {
 //           END RemoteXY include          // 
 ///////////////////////////////////////////// 
 
+char SSID[20];
+bool connected = false;
+
 RoboEffects motorEffect = RoboEffects();
 RoboMotor motor = RoboMotor("motor", D7, D8, &motorEffect);
 
@@ -106,34 +109,51 @@ RoboMotor stearing = RoboMotor("stearing", D5, D6, &stearingEffect);
 
 SerialController serialController = SerialController();
 
-Blinker leftLight = Blinker();
-Blinker rightLight = Blinker();
-Blinker siren1 = Blinker();
+Blinker leftLight = Blinker("Left light");
+Blinker rightLight = Blinker("Right light");
+Blinker siren1 = Blinker("Siren");
+Blinker buildinLed = Blinker("Build in led");
 
+int FrontLightPin = D4;
 
 bool turnOffTurnLights = false;
 
 void handleTurnLight(int stearing) {
-	if (RemoteXY.turnLight == 1) return;
-	if (RemoteXY.turnLight == 2) { //Включений правий поворот
+	if (RemoteXY.turnLight == 0) { //Включений лівий поворот
 		if (!leftLight.isRunning()) leftLight.begin();
-		if (stearing > 50) turnOffTurnLights = true;//ставимо флажок, щоб вимкнути поворот після того як руль вернеться в прямк положенн
+		rightLight.end();
 	}
-	if (RemoteXY.turnLight == 0) { //Включений правий поворот
+	if (RemoteXY.turnLight == 2) { //Включений правий поворот
 		if (!rightLight.isRunning()) rightLight.begin();
+		leftLight.end();
+	}
+	if (leftLight.isRunning()) {
 		if (stearing < -50) turnOffTurnLights = true;//ставимо флажок, щоб вимкнути поворот після того як руль вернеться в прямк положенн
 	}
-	if (stearing > -10 && stearing < 10 && turnOffTurnLights) {
-		RemoteXY.turnLight = 1;
-		if (leftLight.isRunning()) leftLight.end();
-		if (rightLight.isRunning()) rightLight.end();
-		turnOffTurnLights = false;
-		Serial.println("Поворот вимкнено.");
+	else if (rightLight.isRunning()) {
+		if (stearing > 50) turnOffTurnLights = true;//ставимо флажок, щоб вимкнути поворот після того як руль вернеться в прямк положенн
+	}
+	if (turnOffTurnLights && stearing > -50 && stearing < 50) {
+		if (leftLight.isRunning() && !rightLight.isRunning()) {//блимає лівий поворот
+			leftLight.end();
+			turnOffTurnLights = false;
+			Serial.println("Лівий поворот вимкнено.");
+		}
+		else if (!leftLight.isRunning() && rightLight.isRunning()) {//блимає правий поворот
+			rightLight.end();
+			turnOffTurnLights = false;
+			Serial.println("Правий поворот вимкнено.");
+		}
 	}
 }
 
 void setup()
 {
+	//SSID = ;
+	String s = String(REMOTEXY_WIFI_SSID) + "_" + WiFi.macAddress();
+	s.replace(":", "");
+	strcpy(&SSID[0], s.c_str());
+
 	Serial.begin(115200);
 	Serial.println("");
 	Serial.println("");
@@ -143,8 +163,9 @@ void setup()
 	Serial.println("    |__|____| |___| |___|  |_____/");
 	Serial.println("               WI-FI remote control");
 	Serial.println("                 kushlavr@gmail.com");
+	Serial.println(SSID);
 
-	RemoteXY_Init();
+	remotexy = new CRemoteXY(RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, SSID, REMOTEXY_WIFI_PASSWORD, REMOTEXY_SERVER_PORT);//RemoteXY_Init();
 	// TODO you setup code 
 	analogWriteRange(120);
 	//analogWriteFreq(500);
@@ -177,22 +198,32 @@ void setup()
 	serialController.rightLight = &rightLight;
 	//Налаштування сирени
 	siren1
-		.Add(D0, 0, 255)->Add(D3, 0, 0)
-
+		.Add(D3, 0, 0)
+		
+		->Add(D0, 0, 255)
 		->Add(D0, 100, 0)
 		->Add(D0, 200, 255)
 		->Add(D0, 300, 0)
-		->Add(D0, 500, 255)
+		->Add(D0, 400, 255)
 		->Add(D0, 600, 0)
 
-		->Add(D3, 800, 255)
-		->Add(D3, 900, 0)
-		->Add(D3, 1000, 255)
-		->Add(D3, 1100, 0)
-		->Add(D3, 1200, 255)
-		->Add(D3, 1300, 0);
+		->Add(D3, 700, 255)
+		->Add(D3, 800, 0)
+		->Add(D3, 900, 255)
+		->Add(D3, 1000, 0)
+		->Add(D3, 1100, 255)
+		->Add(D3, 1200, 0);
 	serialController.siren1 = &siren1;
-
+	//Налаштування фар
+	pinMode(FrontLightPin, OUTPUT);
+	digitalWrite(FrontLightPin, LOW);
+	//Блимак встроїного світлодіода
+	buildinLed.Add(BUILTIN_LED, 0, 0)
+		->Add(BUILTIN_LED, 500, 255)
+		->Add(BUILTIN_LED, 1000, 0);
+	buildinLed.begin();
+	leftLight.begin();
+	rightLight.begin();
 }
 
 int mapSpeed(int speed) {
@@ -216,14 +247,21 @@ int mapStearing(int direction) {
 		return -map(corectedDirection, 0, 100, 50, 100);
 }
 
+
 void loop()
 {
 	RemoteXY_Handler();
 	if (!serialController.isRunning) {
-
-		// TODO you loop code 
 		// используйте структуру RemoteXY для передачи данных 
 		if (RemoteXY.connect_flag) {
+			if (!connected) {
+				Serial.println("Connected!");
+				digitalWrite(FrontLightPin , HIGH);
+				buildinLed.end();
+				leftLight.end();
+				rightLight.end();
+				connected = true;
+			}
 			switch (RemoteXY.drive_mode)
 			{
 			case 1: {//лівий джойстик швидкість, правий - повороти
@@ -256,10 +294,16 @@ void loop()
 			else {
 				if (siren1.isRunning()) siren1.end();
 			}
-			analogWrite(BUILTIN_LED, 220);
 		}
 		else {
-			digitalWrite(BUILTIN_LED, HIGH);
+			if (connected) {
+				Serial.println("Disconnected!");
+				digitalWrite(FrontLightPin, LOW);
+				connected = false;
+				buildinLed.begin();
+				leftLight.begin();
+				rightLight.begin();
+			}
 			motor.reset();
 			stearing.reset();
 		}
@@ -270,4 +314,5 @@ void loop()
 	leftLight.loop();
 	rightLight.loop();
 	siren1.loop();
+	buildinLed.loop();
 }

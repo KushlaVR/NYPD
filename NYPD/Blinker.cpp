@@ -2,10 +2,11 @@
 
 
 
-Blinker::Blinker()
+Blinker::Blinker(String name)
 {
 	first = nullptr;
 	current = nullptr;
+	this->name = name;
 }
 
 
@@ -21,7 +22,8 @@ void Blinker::loop()
 	if (item == nullptr) return;//Якщо немає елемента на черзі - нічого не робимо
 	if (offset < item->offset) return;//Якщо час ще не настав - виходимо
 	analogWrite(item->pin, item->value);//Час настав
-	Serial.printf("blink %i->%i\n", item->pin, item->value);
+	Serial.print(name);
+	Serial.printf(": %i->%i\n", item->pin, item->value);
 	current = item->next;//Переходимо до наступного елемента
 	if (current == nullptr) {//кінець списку, починаємо з початку
 		current = first;

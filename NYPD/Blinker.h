@@ -24,10 +24,11 @@ class Blinker
 	BlinkerItem * last;
 	BlinkerItem * current;
 
+	String name;
 	unsigned long startTime = 0;
 
 public:
-	Blinker();
+	Blinker(String name);
 	~Blinker();
 	void loop();
 	Blinker * Add(int pin, unsigned long offset, uint8_t value);
